@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Jednoduchá hra</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        button {
+            font-size: 20px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+        #score {
+            font-size: 24px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Patrik Šorna</h1>
+
+    <p>Klikni na tlačítko a získej body:</p>
+
+    <button onclick="addPoint()">Klikni!</button>
+
+    <div id="score">Skóre: 0</div>
+
+    <script>
+        let score = 0;
+
+        function addPoint() {
+            score++;
+            document.getElementById("score").textContent = "Skóre: " + score;
+        }
+    </script>
+
+</body>
+</html>
