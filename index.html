@@ -31,6 +31,11 @@
             list-style: none;
             padding: 0;
         }
+
+        #message {
+            color: red;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -47,21 +52,28 @@
 
     <div id="score">Skóre: 0</div>
     <p id="cooldown"></p>
+    <p id="message"></p>
 
     <h2>🏆 Leaderboard</h2>
     <ul id="leaderboard"></ul>
 
     <script>
         let score = 0;
+
+        // prodleva klikání
         let lastClick = 0;
-        const delay = 1000; // 1 sekunda
+        const clickDelay = 1000;
+
+        // prodleva ukládání
+        let lastSave = 0;
+        const saveDelay = 5000; // 5 sekund
 
         let leaderboard = JSON.parse(localStorage.getItem("leaderboard")) || [];
 
         function addPoint() {
             const now = Date.now();
 
-            if (now - lastClick < delay) {
+            if (now - lastClick < clickDelay) {
                 document.getElementById("cooldown").textContent = "Počkej 1 sekundu!";
                 return;
             }
@@ -73,12 +85,22 @@
         }
 
         function saveScore() {
+            const now = Date.now();
             const name = document.getElementById("playerName").value.trim();
 
             if (name === "") {
                 alert("Zadej jméno!");
                 return;
             }
+
+            if (now - lastSave < saveDelay) {
+                document.getElementById("message").textContent =
+                    "Počkej 5 sekund před dalším uložením!";
+                return;
+            }
+
+            lastSave = now;
+            document.getElementById("message").textContent = "";
 
             leaderboard.push({ name, score });
             leaderboard.sort((a, b) => b.score - a.score);
