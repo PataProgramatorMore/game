@@ -32,7 +32,7 @@
             padding: 0;
         }
 
-        #message {
+        #message, #cooldown {
             color: red;
             font-weight: bold;
         }
@@ -40,91 +40,111 @@
 </head>
 <body>
 
-    <h1>Klikací hra</h1>
+<h1>Klikací hra</h1>
 
-    <p>Zadej své jméno:</p>
-    <input type="text" id="playerName" placeholder="Tvoje jméno">
+<p>Zadej své jméno:</p>
+<input type="text" id="playerName" placeholder="Tvoje jméno">
 
-    <div>
-        <button onclick="addPoint()">Klikni!</button>
-        <button onclick="saveScore()">Uložit skóre</button>
-    </div>
+<div>
+    <button onclick="addPoint()">Klikni!</button>
+    <button onclick="saveScore()">Uložit skóre</button>
+</div>
 
-    <div id="score">Skóre: 0</div>
-    <p id="cooldown"></p>
-    <p id="message"></p>
+<div id="score">Skóre: 0</div>
+<p id="cooldown"></p>
+<p id="message"></p>
 
-    <h2>🏆 Leaderboard</h2>
-    <ul id="leaderboard"></ul>
+<h2>🏆 Leaderboard</h2>
+<ul id="leaderboard"></ul>
 
-    <script>
-        let score = 0;
+<!-- Firebase knihovny -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
-        // prodleva klikání
-        let lastClick = 0;
-        const clickDelay = 1000;
+<script>
+    // 🔥 ZDE DOPLŇ SVŮJ FIREBASE CONFIG
+    var firebaseConfig = {
+        apiKey: "AIzaSyASzoA1elm1fbGcLPaI7Es3ms0T30McXbs",
+        authDomain: "klikani-900fa.firebaseapp.com",
+        databaseURL: "https://klikani-900fa-default-rtdb.europe-west1.firebasedatabase.app/",
+        projectId: "klikani-900fa",
+    };
 
-        // prodleva ukládání
-        let lastSave = 0;
-        const saveDelay = 5000; // 5 sekund
+    // Inicializace Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-        let leaderboard = JSON.parse(localStorage.getItem("leaderboard")) || [];
+    // Hra
+    let score = 0;
 
-        function addPoint() {
-            const now = Date.now();
+    // prodleva klikání (1 sekunda)
+    let lastClick = 0;
+    const clickDelay = 1000;
 
-            if (now - lastClick < clickDelay) {
-                document.getElementById("cooldown").textContent = "Počkej 1 sekundu!";
-                return;
-            }
+    // prodleva ukládání (5 sekund)
+    let lastSave = 0;
+    const saveDelay = 5000;
 
-            lastClick = now;
-            score++;
-            document.getElementById("score").textContent = "Skóre: " + score;
-            document.getElementById("cooldown").textContent = "";
+    function addPoint() {
+        const now = Date.now();
+
+        if (now - lastClick < clickDelay) {
+            document.getElementById("cooldown").textContent = "Počkej 1 sekundu!";
+            return;
         }
 
-        function saveScore() {
-            const now = Date.now();
-            const name = document.getElementById("playerName").value.trim();
+        lastClick = now;
+        score++;
+        document.getElementById("score").textContent = "Skóre: " + score;
+        document.getElementById("cooldown").textContent = "";
+    }
 
-            if (name === "") {
-                alert("Zadej jméno!");
-                return;
-            }
+    function saveScore() {
+        const now = Date.now();
+        const name = document.getElementById("playerName").value.trim();
 
-            if (now - lastSave < saveDelay) {
-                document.getElementById("message").textContent =
-                    "Počkej 5 sekund před dalším uložením!";
-                return;
-            }
-
-            lastSave = now;
-            document.getElementById("message").textContent = "";
-
-            leaderboard.push({ name, score });
-            leaderboard.sort((a, b) => b.score - a.score);
-
-            localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
-            updateLeaderboard();
-
-            score = 0;
-            document.getElementById("score").textContent = "Skóre: 0";
+        if (name === "") {
+            alert("Zadej jméno!");
+            return;
         }
 
-        function updateLeaderboard() {
-            const list = document.getElementById("leaderboard");
-            list.innerHTML = "";
+        if (now - lastSave < saveDelay) {
+            document.getElementById("message").textContent =
+                "Počkej 5 sekund před dalším uložením!";
+            return;
+        }
 
-            leaderboard.forEach((player, index) => {
+        lastSave = now;
+        document.getElementById("message").textContent = "";
+
+        // uloží skóre do Firebase
+        db.ref("scores").push({
+            name: name,
+            score: score
+        });
+
+        // reset skóre
+        score = 0;
+        document.getElementById("score").textContent = "Skóre: 0";
+    }
+
+    // Zobrazení leaderboardu pro všechny hráče
+    db.ref("scores").on("value", snapshot => {
+        const data = snapshot.val();
+        const list = document.getElementById("leaderboard");
+        list.innerHTML = "";
+
+        if (!data) return;
+
+        Object.values(data)
+            .sort((a, b) => b.score - a.score)
+            .forEach((player, index) => {
                 const li = document.createElement("li");
                 li.textContent = `${index + 1}. ${player.name} – ${player.score} bodů`;
                 list.appendChild(li);
             });
-        }
-
-        updateLeaderboard();
-    </script>
+    });
+</script>
 
 </body>
 </html>
