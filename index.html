@@ -2,98 +2,129 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>Online Klikací hra</title>
-
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
+    <title>Klikací hra s leaderboardem</title>
     <style>
-        body { font-family: Arial; text-align: center; }
-        button { font-size: 20px; margin: 10px; }
-        input { font-size: 18px; }
-        ul { list-style: none; padding: 0; }
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        button {
+            font-size: 20px;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 10px;
+        }
+
+        #score {
+            font-size: 24px;
+            margin: 20px;
+        }
+
+        input {
+            font-size: 18px;
+            padding: 5px;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        #message {
+            color: red;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
 
-<h1>🌍 Online Klikací hra</h1>
+    <h1>Klikací hra</h1>
 
-<input id="name" placeholder="Tvoje jméno"><br><br>
-<button onclick="addPoint()">Klikni</button>
-<button onclick="saveScore()">Uložit</button>
+    <p>Zadej své jméno:</p>
+    <input type="text" id="playerName" placeholder="Tvoje jméno">
 
-<p id="score">Skóre: 0</p>
-<p id="msg"></p>
+    <div>
+        <button onclick="addPoint()">Klikni!</button>
+        <button onclick="saveScore()">Uložit skóre</button>
+    </div>
 
-<h2>🏆 Leaderboard</h2>
-<ul id="leaderboard"></ul>
+    <div id="score">Skóre: 0</div>
+    <p id="cooldown"></p>
+    <p id="message"></p>
 
-<script>
-/* 🔥 DOPLŇ TVŮJ FIREBASE CONFIG */
-var firebaseConfig = {
-    apiKey: "TVŮJ_API_KEY",
-    authDomain: "TVŮJ_PROJEKT.firebaseapp.com",
-    databaseURL: "https://TVŮJ_PROJEKT.firebaseio.com",
-    projectId: "TVŮJ_PROJEKT",
-};
-firebase.initializeApp(firebaseConfig);
+    <h2>🏆 Leaderboard</h2>
+    <ul id="leaderboard"></ul>
 
-const db = firebase.database();
+    <script>
+        let score = 0;
 
-let score = 0;
-let lastClick = 0;
-let lastSave = 0;
+        // prodleva klikání
+        let lastClick = 0;
+        const clickDelay = 1000;
 
-function addPoint() {
-    const now = Date.now();
-    if (now - lastClick < 1000) return;
-    lastClick = now;
-    score++;
-    document.getElementById("score").textContent = "Skóre: " + score;
-}
+        // prodleva ukládání
+        let lastSave = 0;
+        const saveDelay = 5000; // 5 sekund
 
+        let leaderboard = JSON.parse(localStorage.getItem("leaderboard")) || [];
 
-function saveScore() {
-    const now = Date.now();
-    if (now - lastSave < 5000) {
-        document.getElementById("msg").textContent = "Počkej 5 sekund!";
-        return;
-    }
+        function addPoint() {
+            const now = Date.now();
 
-    const name = document.getElementById("name").value.trim();
-    if (!name) return alert("Zadej jméno!");
+            if (now - lastClick < clickDelay) {
+                document.getElementById("cooldown").textContent = "Počkej 1 sekundu!";
+                return;
+            }
 
-    lastSave = now;
-    db.ref("scores").push({
-        name: name,
-        score: score
-    });
+            lastClick = now;
+            score++;
+            document.getElementById("score").textContent = "Skóre: " + score;
+            document.getElementById("cooldown").textContent = "";
+        }
 
-    score = 0;
-    document.getElementById("score").textContent = "Skóre: 0";
-    document.getElementById("msg").textContent = "";
-}
+        function saveScore() {
+            const now = Date.now();
+            const name = document.getElementById("playerName").value.trim();
 
-db.ref("scores").on("value", snapshot => {
-    const data = snapshot.val();
-    const list = document.getElementById("leaderboard");
-    list.innerHTML = "";
+            if (name === "") {
+                alert("Zadej jméno!");
+                return;
+            }
 
-    if (!data) return;
+            if (now - lastSave < saveDelay) {
+                document.getElementById("message").textContent =
+                    "Počkej 5 sekund před dalším uložením!";
+                return;
+            }
 
-    const sorted = Object.values(data)
-        .sort((a, b) => b.score - a.score);
+            lastSave = now;
+            document.getElementById("message").textContent = "";
 
-    sorted.forEach((p, i) => {
-        const li = document.createElement("li");
-        li.textContent = `${i+1}. ${p.name} – ${p.score}`;
-        list.appendChild(li);
-    });
-});
-</script>
+            leaderboard.push({ name, score });
+            leaderboard.sort((a, b) => b.score - a.score);
+
+            localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+            updateLeaderboard();
+
+            score = 0;
+            document.getElementById("score").textContent = "Skóre: 0";
+        }
+
+        function updateLeaderboard() {
+            const list = document.getElementById("leaderboard");
+            list.innerHTML = "";
+
+            leaderboard.forEach((player, index) => {
+                const li = document.createElement("li");
+                li.textContent = `${index + 1}. ${player.name} – ${player.score} bodů`;
+                list.appendChild(li);
+            });
+        }
+
+        updateLeaderboard();
+    </script>
 
 </body>
 </html>
-
-
