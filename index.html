@@ -53,25 +53,13 @@ function addPoint() {
     document.getElementById("score").textContent = "Skóre: " + score;
 }
 
+
 function saveScore() {
-    const name = document.getElementById("name").value.trim();
-    if (!name) {
-        alert("Zadej jméno!");
+    const now = Date.now();
+    if (now - lastSave < 5000) {
+        document.getElementById("msg").textContent = "Počkej 5 sekund!";
         return;
     }
-
-    db.ref("scores").push({
-        name: name,
-        score: score,
-        time: Date.now()
-    })
-    .then(() => {
-        console.log("ULOŽENO");
-    })
-    .catch(err => {
-        console.error("CHYBA:", err);
-    });
-}
 
     const name = document.getElementById("name").value.trim();
     if (!name) return alert("Zadej jméno!");
@@ -107,4 +95,5 @@ db.ref("scores").on("value", snapshot => {
 
 </body>
 </html>
+
 
